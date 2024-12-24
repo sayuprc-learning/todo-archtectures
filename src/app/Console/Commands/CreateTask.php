@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\Task;
-use Exception;
+use App\Services\TaskService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
 
@@ -28,7 +27,7 @@ class CreateTask extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(TaskService $service): int
     {
         $arguments = $this->arguments();
 
@@ -48,15 +47,11 @@ class CreateTask extends Command
             return self::FAILURE;
         }
 
-        $task = new Task();
-        $task->title = $arguments['title'];
-        $task->description = $arguments['description'];
-        $task->completed = false;
-        $task->due_date = $arguments['due_date'];
-
-        try {
-            $task->save();
-        } catch (Exception $e) {
+        if (! $service->store(
+            $arguments['title'],
+            $arguments['description'],
+            $arguments['due_date'],
+        )) {
             $this->error('エラーが発生しました');
 
             return self::FAILURE;

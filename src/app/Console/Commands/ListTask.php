@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\Task;
+use App\Services\TaskService;
 use Illuminate\Console\Command;
 
 class ListTask extends Command
@@ -26,13 +26,11 @@ class ListTask extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): void
+    public function handle(TaskService $service): void
     {
-        $tasks = Task::all();
+        [$completedTasks, $uncompletedTasks] = $service->all();
 
         $this->info('未完了タスク');
-
-        $uncompletedTasks = $tasks->reject(fn (Task $task): bool => $task->completed);
 
         foreach ($uncompletedTasks as $task) {
             $this->info(sprintf('[%s] %s', $task->id, $task->title));
@@ -41,8 +39,6 @@ class ListTask extends Command
         $this->newLine();
 
         $this->info('完了タスク');
-
-        $completedTasks = $tasks->filter(fn (Task $task): bool => $task->completed);
 
         foreach ($completedTasks as $task) {
             $this->info(sprintf('[%s] %s', $task->id, $task->title));

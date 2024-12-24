@@ -4,25 +4,24 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Models\Task;
-use Exception;
+use App\Services\TaskService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 
 class TaskController extends Controller
 {
+    public function __construct(private readonly TaskService $service)
+    {
+    }
+
     /**
      * タスクの一覧表示メソッド
      * 未完了のタスクと完了済みのタスクは分けて表示する
      */
     public function index(): View
     {
-        $tasks = Task::all();
-
-        $completedTasks = $tasks->filter(fn (Task $task): bool => $task->completed);
-        $uncompletedTasks = $tasks->reject(fn (Task $task): bool => $task->completed);
+        [$completedTasks , $uncompletedTasks] = $this->service->all();
 
         return view('tasks.index', compact('completedTasks', 'uncompletedTasks'));
     }
@@ -47,17 +46,11 @@ class TaskController extends Controller
             'due_date' => ['required', 'date_format:Y-m-d'],
         ]);
 
-        $task = new Task();
-        $task->title = $request->input('title');
-        $task->description = $request->input('description');
-        $task->completed = false;
-        $task->due_date = $request->input('due_date');
-
-        try {
-            $task->save();
-        } catch (Exception $e) {
-            Log::error($e->getMessage());
-
+        if (! $this->service->store(
+            $request->input('title'),
+            $request->input('description'),
+            $request->input('due_date'),
+        )) {
             return redirect()
                 ->route('tasks.index')
                 ->withErrors(['message' => 'エラーが発生しました']);
@@ -73,7 +66,7 @@ class TaskController extends Controller
      */
     public function show(int $id): RedirectResponse|View
     {
-        $task = Task::find($id);
+        $task = $this->service->find($id);
 
         if (is_null($task)) {
             return redirect()
@@ -89,7 +82,7 @@ class TaskController extends Controller
      */
     public function edit(int $id): RedirectResponse|View
     {
-        $task = Task::find($id);
+        $task = $this->service->find($id);
 
         if (is_null($task)) {
             return redirect()
@@ -114,7 +107,7 @@ class TaskController extends Controller
             'due_date' => ['required', 'date_format:Y-m-d'],
         ]);
 
-        $task = Task::find($id);
+        $task = $this->service->find($id);
 
         if (is_null($task)) {
             return redirect()
@@ -122,16 +115,13 @@ class TaskController extends Controller
                 ->withErrors(['message' => '存在しないタスクです']);
         }
 
-        $task->title = $request->input('title');
-        $task->description = $request->input('description');
-        $task->completed = $request->input('completed', false);
-        $task->due_date = $request->input('due_date');
-
-        try {
-            $task->save();
-        } catch (Exception $e) {
-            Log::error($e->getMessage());
-
+        if (! $this->service->update(
+            $id,
+            $request->input('title'),
+            $request->input('description'),
+            $request->input('completed', false),
+            $request->input('due_date'),
+        )) {
             return redirect()
                 ->route('tasks.index')
                 ->withErrors(['message' => 'エラーが発生しました']);
@@ -148,7 +138,7 @@ class TaskController extends Controller
      */
     public function destroy(int $id): RedirectResponse
     {
-        Task::destroy($id);
+        $this->service->delete($id);
 
         return redirect()
             ->route('tasks.index')

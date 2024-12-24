@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\Task;
+use App\Services\TaskService;
 use Illuminate\Console\Command;
 
 class ShowTask extends Command
@@ -26,9 +26,9 @@ class ShowTask extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(TaskService $service): int
     {
-        $task = Task::find($this->argument('id'));
+        $task = $service->find((int)$this->argument('id'));
 
         if (is_null($task)) {
             $this->error('存在しないタスクです');

@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\Task;
-use Exception;
+use App\Services\TaskService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Validator;
 
@@ -28,7 +27,7 @@ class EditTask extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(TaskService $service): int
     {
         $arguments = $this->arguments();
         $options = $this->options();
@@ -73,7 +72,7 @@ class EditTask extends Command
             return self::FAILURE;
         }
 
-        $task = Task::find($arguments['id']);
+        $task = $service->find($arguments['id']);
 
         if (is_null($task)) {
             $this->error('存在しないタスクです');
@@ -81,14 +80,13 @@ class EditTask extends Command
             return self::FAILURE;
         }
 
-        $task->title = $options['title'] ?? $task->title;
-        $task->description = $options['description'] ?? $task->description;
-        $task->completed = $options['completed'] ?? $task->completed;
-        $task->due_date = $options['due_date'] ?? $task->due_date;
-
-        try {
-            $task->save();
-        } catch (Exception $e) {
+        if (! $service->update(
+            $arguments['id'],
+            $options['title'] ?? $task->title,
+            $options['description'] ?? $task->description,
+            $options['completed'] ?? $task->completed,
+            $options['due_date'] ?? $task->due_date,
+        )) {
             $this->error('エラーが発生しました');
 
             return self::FAILURE;

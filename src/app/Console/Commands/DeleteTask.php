@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\Task;
+use App\Services\TaskService;
 use Illuminate\Console\Command;
 
 class DeleteTask extends Command
@@ -26,9 +26,9 @@ class DeleteTask extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(TaskService $service)
     {
-        Task::destroy($this->argument('id'));
+        $service->delete((int)$this->argument('id'));
 
         $this->info('削除しました');
     }
