@@ -10,7 +10,13 @@ class Task
         public readonly Id $id,
         public readonly Title $title,
         public readonly Description $description,
+        public readonly Completed $completed,
         public readonly DueDate $dueDate,
     ) {
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->completed->value;
     }
 }
